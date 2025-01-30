@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { Professor } from '../types.d';
 
-const ProfessorList = () => {
+const AdminList = () => {
     const [professors, setProfessors] = useState<Professor[]>([]);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ const ProfessorList = () => {
   return (
     <div style={{ padding: '20px' }}>
       <h2>Professors</h2>
-      <Link to="/professors/new">Add New Professor</Link>
+      <Link to="/admin/new">Add New Professor</Link>
 
       {professors.length === 0 ? (
         <p>No professors found.</p>
@@ -27,7 +27,7 @@ const ProfessorList = () => {
         <ul>
           {professors.map((prof) => (
             <li key={prof.id}>
-              <Link to={`/professors/${prof.id}`}>
+              <Link to={`/admin/${prof.id}`}>
                 {prof.name} (SSN: {prof.social_security_number})
               </Link>
             </li>
@@ -38,4 +38,4 @@ const ProfessorList = () => {
   );
 };
 
-export default ProfessorList;
+export default AdminList;

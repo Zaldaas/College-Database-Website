@@ -1,23 +1,31 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import ProfessorList from './pages/ProfessorList';
-import ProfessorForm from './pages/ProfessorForm';
+import Welcome from './pages/Welcome';
+import AdminList from './pages/AdminList';
 import ProfessorDetail from './pages/ProfessorDetail';
-// Import your other resource pages similarly...
+import ProfessorForm from './pages/ProfessorForm';
 
 function App() {
+  useEffect(() => {
+    document.body.setAttribute('data-bs-theme', 'dark');
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Home or default route */}
-        <Route path="/" element={<h1>Welcome to the University Database</h1>} />
+        {/* Our Welcome Page as the default route */}
+        <Route path="/" element={<Welcome />} />
 
-        {/* Professors */}
-        <Route path="/professors" element={<ProfessorList />} />
-        <Route path="/professors/new" element={<ProfessorForm />} />
-        <Route path="/professors/:id" element={<ProfessorDetail />} />
+        {/*Student "pages" */}
+        <Route path="/student" element={<h2>Student Page (TODO)</h2>} />
 
-        {/* (You can add other routes here for Departments, Courses, etc.) */}
+        {/*Professor "pages" */}
+        <Route path="/professor" element={<h2>Professor Page (TODO)</h2>} />
 
+        {/*Administrator "pages" */}
+        <Route path="/admin" element={<AdminList/>} />
+        <Route path="/admin/:id" element={<ProfessorDetail />} />
+        <Route path="/admin/new" element={<ProfessorForm />} />
       </Routes>
     </BrowserRouter>
   );
