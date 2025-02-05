@@ -7,10 +7,9 @@ function Welcome() {
     <>
       <Navbar className="bg-body-tertiary">
         <Nav className="ms-auto me-3">
-          <Navbar.Brand href="#home">Home</Navbar.Brand>
-          <Nav.Link href="#home">About</Nav.Link>
-          <Nav.Link href="https://github.com/Zaldaas/College-Database" target="_blank">GitHub</Nav.Link>
-          <Nav.Link href="https://www.linkedin.com/in/zeid-aldaas1111/" target="_blank">LinkedIn</Nav.Link>
+          <Navbar.Brand href="/">Home</Navbar.Brand>
+          <Nav.Link href="/about">About</Nav.Link>
+          <Nav.Link href="/links">Links</Nav.Link>
         </Nav>
       </Navbar>
       <div className="container text-center mt-3">
