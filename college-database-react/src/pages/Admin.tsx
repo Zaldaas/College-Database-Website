@@ -5,11 +5,13 @@ import Form from 'react-bootstrap/Form';
 import Container from 'react-bootstrap/Container';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import useDocumentTitle from '../hooks/useDocumentTitle';
 function Admin() {
+    useDocumentTitle('Admin Login');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

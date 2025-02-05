@@ -1,8 +1,11 @@
 import Button from 'react-bootstrap/Button';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function Welcome() {
+    useDocumentTitle('Welcome');
+
     return (
     <>
       <Navbar className="bg-body-tertiary">

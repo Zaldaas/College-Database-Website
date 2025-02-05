@@ -1,32 +1,36 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { Professor } from '../types.d';
+import { Student } from '../types.d';
 import Table from 'react-bootstrap/Table';
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
-const AdminProfList = () => {
-    const [professors, setProfessors] = useState<Professor[]>([]);
+const AdminStudentList = () => {
+    const [students, setStudents] = useState<Student[]>([]);
     const [error, setError] = useState<string>('');
 
 
     useEffect(() => {
-        api.get<Professor[]>('/professors')
+        api.get<Student[]>('/students')
             .then(response => {
-                setProfessors(response.data);
+                setStudents(response.data);
             })
+
             .catch(error => {
-                console.error('Error fetching professors:', error);
-                setError('Failed to load professors. Please try again later.');
+                console.error('Error fetching students:', error);
+                setError('Failed to load students. Please try again later.');
             });
+
     }, []);
 
-    useDocumentTitle('Professor List');
+    useDocumentTitle('Student List');
+
 
     return (
         <>
@@ -39,13 +43,14 @@ const AdminProfList = () => {
             </Navbar>
             <Container>
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Professor List</h2>
-                    <Link to="/admin/newprof">
+                    <h2>Student List</h2>
+                    <Link to="/admin/newstudent">
                         <Button variant="primary">
-                            <i className="bi bi-plus-circle me-2"></i>Add New Professor
+                            <i className="bi bi-plus-circle me-2"></i>Add New Student
                         </Button>
                     </Link>
                 </div>
+
 
                 {error && (
                     <Alert variant="danger" className="mb-4">
@@ -53,28 +58,32 @@ const AdminProfList = () => {
                     </Alert>
                 )}
 
-                {professors.length === 0 && !error ? (
+                {students.length === 0 && !error ? (
                     <Alert variant="info">
-                        No professors found in the database.
+                        No students found in the database.
                     </Alert>
+
                 ) : (
                     <Table striped bordered hover responsive>
                         <thead className="table-dark">
                             <tr>
                                 <th>Name</th>
-                                <th>SSN</th>
+                                <th>CWID</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {professors.map((prof) => (
-                                <tr key={prof.id}>
-                                    <td>{prof.name}</td>
-                                    <td>{prof.social_security_number}</td>
+                            {students.map((student) => (
+                                <tr key={student.id}>
+                                    <td>{student.first_name} {student.last_name}</td>
+                                    <td>{student.campus_wide_id}</td>
                                     <td>
-                                        <Link to={`/admin/prof/${prof.id}`}>
+
+
+                                        <Link to={`/admin/student/${student.id}`}>
                                             <Button variant="outline-primary" size="sm">
                                                 View/Edit
+
                                             </Button>
                                         </Link>
                                     </td>
@@ -88,4 +97,4 @@ const AdminProfList = () => {
     );
 };
 
-export default AdminProfList;
+export default AdminStudentList;

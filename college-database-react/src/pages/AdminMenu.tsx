@@ -1,6 +1,9 @@
 import { Navbar, Nav, Button } from 'react-bootstrap';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function AdminMain() {
+    useDocumentTitle('Admin Dashboard');
+
     return (
     <>
       <Navbar className="bg-body-tertiary">
@@ -12,7 +15,7 @@ function AdminMain() {
         </Nav>
       </Navbar>
       <div className="container text-center mt-5">
-        <h1 className="mb-4">Administrator Menu</h1>
+        <h1 className="mb-4">Administrator Dashboard</h1>
         <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
           <Button href="/admin/studentlist" className="btn btn-primary mb-3" style={{ fontSize: '24px', width: '300px' }}>
             Students
@@ -23,9 +26,13 @@ function AdminMain() {
           <Button href="/admin/courselist" className="btn btn-primary mb-3" style={{ fontSize: '24px', width: '300px' }}>
             Courses
           </Button>
+          <Button href="/admin/departmentlist" className="btn btn-primary mb-3" style={{ fontSize: '24px', width: '300px' }}>
+            Departments
+          </Button>
         </div>
       </div>
     </>
+
 
     );
 }

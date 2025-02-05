@@ -1,7 +1,10 @@
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function Links() {
+    useDocumentTitle('Useful Links');
+
     return (
         <>
             <Navbar className="bg-body-tertiary">

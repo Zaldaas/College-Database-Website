@@ -1,7 +1,10 @@
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 function About() {
+    useDocumentTitle('About');
+
     return (
         <>
             <Navbar className="bg-body-tertiary">
@@ -21,11 +24,9 @@ function About() {
                         </p>
                         <h2 className="mt-4">Features</h2>
                         <ul>
-                            <li>Student enrollment management</li>
-                            <li>Professor course assignments</li>
-                            <li>Administrative oversight</li>
-                            <li>Course availability</li>
-                            <li>Academic record keeping</li>
+                            <li>Students can check their enrollments and grades</li>
+                            <li>Professors can check their courses and students</li>
+                            <li>Administrative oversight and management of students, professors and courses</li>
                         </ul>
                         <h2 className="mt-4">Contact</h2>
                         <p>

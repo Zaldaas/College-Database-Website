@@ -1,32 +1,37 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { Professor } from '../types.d';
+import { Course, Department } from '../types.d';
 import Table from 'react-bootstrap/Table';
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
-const AdminProfList = () => {
-    const [professors, setProfessors] = useState<Professor[]>([]);
+const AdminCourseList = () => {
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [error, setError] = useState<string>('');
 
-
     useEffect(() => {
-        api.get<Professor[]>('/professors')
-            .then(response => {
-                setProfessors(response.data);
+        Promise.all([
+            api.get<Course[]>('/courses'),
+            api.get<Department[]>('/departments')
+        ])
+            .then(([coursesResponse, departmentsResponse]) => {
+                setCourses(coursesResponse.data);
+                setDepartments(departmentsResponse.data);
             })
             .catch(error => {
-                console.error('Error fetching professors:', error);
-                setError('Failed to load professors. Please try again later.');
+                console.error('Error fetching data:', error);
+                setError('Failed to load courses. Please try again later.');
             });
     }, []);
 
-    useDocumentTitle('Professor List');
+    useDocumentTitle('Course List');
 
     return (
         <>
@@ -39,10 +44,10 @@ const AdminProfList = () => {
             </Navbar>
             <Container>
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Professor List</h2>
-                    <Link to="/admin/newprof">
+                    <h2>Course List</h2>
+                    <Link to="/admin/newcourse">
                         <Button variant="primary">
-                            <i className="bi bi-plus-circle me-2"></i>Add New Professor
+                            <i className="bi bi-plus-circle me-2"></i>Add New Course
                         </Button>
                     </Link>
                 </div>
@@ -53,26 +58,32 @@ const AdminProfList = () => {
                     </Alert>
                 )}
 
-                {professors.length === 0 && !error ? (
+                {courses.length === 0 && !error ? (
                     <Alert variant="info">
-                        No professors found in the database.
+                        No courses found in the database.
                     </Alert>
                 ) : (
                     <Table striped bordered hover responsive>
                         <thead className="table-dark">
                             <tr>
-                                <th>Name</th>
-                                <th>SSN</th>
+                                <th>Course Number</th>
+                                <th>Title</th>
+                                <th>Textbook</th>
+                                <th>Units</th>
+                                <th>Department</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {professors.map((prof) => (
-                                <tr key={prof.id}>
-                                    <td>{prof.name}</td>
-                                    <td>{prof.social_security_number}</td>
+                            {courses.map((course) => (
+                                <tr key={course.id}>
+                                    <td>{course.course_number}</td>
+                                    <td>{course.title}</td>
+                                    <td>{course.textbook}</td>
+                                    <td>{course.units}</td>
+                                    <td>{departments.find(dept => dept.id === course.department_id)?.name || 'Unknown Department'}</td>
                                     <td>
-                                        <Link to={`/admin/prof/${prof.id}`}>
+                                        <Link to={`/admin/course/${course.id}`}>
                                             <Button variant="outline-primary" size="sm">
                                                 View/Edit
                                             </Button>
@@ -88,4 +99,4 @@ const AdminProfList = () => {
     );
 };
 
-export default AdminProfList;
+export default AdminCourseList;

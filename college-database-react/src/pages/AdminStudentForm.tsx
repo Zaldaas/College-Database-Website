@@ -3,54 +3,62 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import api from '../services/api';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import { Department } from '../types.d';
 
 interface Props {
   isEdit?: boolean;
 }
 
-const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
+const AdminStudentForm: React.FC<Props> = ({ isEdit = false }) => {
   const { id } = useParams();
-  useDocumentTitle(isEdit ? 'Edit Professor' : 'Add New Professor');
+  useDocumentTitle(isEdit ? 'Edit Student' : 'Add New Student');
+
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(isEdit);
-  const [socialSecurityNumber, setSocialSecurityNumber] = useState('');
-  const [name, setName] = useState('');
+  const [campusWideId, setCampusWideId] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [areaCode, setAreaCode] = useState('');
   const [number, setNumber] = useState('');
-  const [sex, setSex] = useState('');
-  const [title, setTitle] = useState('');
-  const [salary, setSalary] = useState('');
-  const [collegeDegrees, setCollegeDegrees] = useState('');
+  const [majorDepartmentId, setMajorDepartmentId] = useState('');
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   useEffect(() => {
+    // Fetch departments for the dropdown
+    api.get('/departments')
+      .then(response => {
+        setDepartments(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching departments:', error);
+      });
+
     if (isEdit && id) {
-      api.get(`/professors/${id}`)
+      api.get(`/students/${id}`)
         .then(response => {
-          const professor = response.data;
-          setSocialSecurityNumber(professor.social_security_number);
-          setName(professor.name);
-          setStreetAddress(professor.street_address);
-          setCity(professor.city);
-          setState(professor.state);
-          setZipCode(professor.zip_code);
-          setAreaCode(professor.area_code);
-          setNumber(professor.number);
-          setSex(professor.sex);
-          setTitle(professor.title);
-          setSalary(professor.salary.toString());
-          setCollegeDegrees(professor.college_degrees);
+          const student = response.data;
+          setCampusWideId(student.campus_wide_id);
+          setFirstName(student.first_name);
+          setLastName(student.last_name);
+          setStreetAddress(student.street_address);
+          setCity(student.city);
+          setState(student.state);
+          setZipCode(student.zip_code);
+          setAreaCode(student.area_code || '');
+          setNumber(student.number || '');
+          setMajorDepartmentId(student.major_department_id);
           setLoading(false);
         })
         .catch(error => {
-          console.error('Error fetching professor:', error);
-          setError('Failed to load professor details.');
+          console.error('Error fetching student:', error);
+          setError('Failed to load student details.');
           setLoading(false);
         });
     }
@@ -59,9 +67,9 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
 
-    // SSN validation - must be exactly 9 numeric characters
-    if (!/^\d{9}$/.test(socialSecurityNumber)) {
-      errors.ssn = 'SSN must be exactly 9 numeric characters (no dashes)';
+    // CWID validation - must be exactly 9 numeric characters
+    if (!/^\d{9}$/.test(campusWideId)) {
+      errors.campusWideId = 'Campus Wide ID must be exactly 9 numeric characters (no dashes)';
     }
 
     // State validation - must be exactly 2 characters
@@ -74,19 +82,14 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
       errors.zipCode = 'Zip code can only contain numbers and must be 5 digits';
     }
 
-    // Area code validation - only numbers, must be 3 digits
-    if (!/^\d{3}$/.test(areaCode) && areaCode !== '') {
+    // Area code validation - only numbers, must be 3 digits if provided
+    if (areaCode.trim() !== '' && !/^\d{3}$/.test(areaCode)) {
       errors.areaCode = 'Area code must be exactly 3 numeric digits';
     }
 
-    // Phone number validation - only numbers, must be 7 digits
-    if (!/^\d{7}$/.test(number) && number !== '') {
+    // Phone number validation - only numbers, must be 7 digits if provided
+    if (number.trim() !== '' && !/^\d{7}$/.test(number)) {
       errors.number = 'Phone number must be exactly 7 numeric digits (no dashes)';
-    }
-
-    // Salary validation - must be a positive number
-    if (salary && !/^\d+(\.\d{0,2})?$/.test(salary)) {
-      errors.salary = 'Salary must be a valid number with up to 2 decimal places';
     }
 
     setValidationErrors(errors);
@@ -102,40 +105,45 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
       return;
     }
 
-    const professorData = {
-      social_security_number: socialSecurityNumber,
-      name,
+    const studentData: any = {
+      campus_wide_id: campusWideId,
+      first_name: firstName,
+      last_name: lastName,
       street_address: streetAddress,
       city,
       state: state.toUpperCase(),
       zip_code: zipCode,
-      area_code: areaCode,
-      number,
-      sex,
-      title,
-      salary: Number(salary),
-      college_degrees: collegeDegrees,
+      major_department_id: majorDepartmentId || null
     };
+
+    // Only include phone fields if they have non-empty values
+    if (areaCode.trim()) {
+      studentData.area_code = areaCode;
+    }
+    if (number.trim()) {
+      studentData.number = number;
+    }
 
     try {
       if (isEdit && id) {
-        await api.put(`/professors/${id}`, professorData);
-        navigate(`/admin/prof/${id}`);
+        await api.put(`/students/${id}`, studentData);
+        navigate(`/admin/student/${id}`);
       } else {
-        await api.post('/professors', professorData);
-        navigate('/admin/proflist');
+        await api.post('/students', studentData);
+        navigate('/admin/studentlist');
       }
 
     } catch (error) {
-      console.error('Error saving professor:', error);
-      setError(`Failed to ${isEdit ? 'update' : 'create'} professor. Please try again.`);
+      console.error('Error saving student:', error);
+      setError(`Failed to ${isEdit ? 'update' : 'create'} student. Please try again.`);
     }
   };
 
-  const handleSSNChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCampusWideIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 9);
-    setSocialSecurityNumber(value);
+    setCampusWideId(value);
   };
+
 
   const handleStateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^A-Za-z]/g, '').slice(0, 2);
@@ -157,13 +165,6 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
     setNumber(value);
   };
 
-  const handleSalaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^\d.]/g, '');
-    if (value === '' || /^\d+(\.\d{0,2})?$/.test(value)) {
-      setSalary(value);
-    }
-  };
-
   if (loading) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
@@ -178,7 +179,7 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
     <Container className="py-5">
       <Card className="shadow-sm">
         <Card.Header className="bg-primary text-white">
-          <h2 className="mb-0">{isEdit ? 'Edit Professor' : 'Add New Professor'}</h2>
+          <h2 className="mb-0">{isEdit ? 'Edit Student' : 'Add New Student'}</h2>
         </Card.Header>
         <Card.Body>
           {error && <Alert variant="danger">{error}</Alert>}
@@ -189,29 +190,43 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
                   <Form.Label>SSN</Form.Label>
                   <Form.Control
                     type="text"
-                    value={socialSecurityNumber}
-                    onChange={handleSSNChange}
-                    isInvalid={!!validationErrors.ssn}
+                    value={campusWideId}
+                    onChange={handleCampusWideIdChange}
+                    isInvalid={!!validationErrors.campusWideId}
                     required
-                    placeholder="Enter 9 digit SSN (e.g. 123456789)"
+                    placeholder="Enter 9 digit Campus Wide ID (e.g. 123456789)"
+
                   />
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.ssn}
+                    {validationErrors.campusWideId}
                   </Form.Control.Feedback>
                 </Form.Group>
+
               </Col>
-              <Col md={6}>
+              <Col md={3}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Name</Form.Label>
+                  <Form.Label>First Name</Form.Label>
                   <Form.Control
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                     required
-                    placeholder="Enter full name"
+                    placeholder="Enter first name"
                   />
                 </Form.Group>
               </Col>
+              <Col md={3}>
+              <Form.Group className="mb-3">
+                  <Form.Label>Last Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    placeholder="Enter last name"
+                  />
+                </Form.Group>
+            </Col>
             </Row>
 
             <Row>
@@ -281,7 +296,7 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
                     value={areaCode}
                     onChange={handleAreaCodeChange}
                     isInvalid={!!validationErrors.areaCode}
-                    placeholder="Enter 3 digit area code"
+                    placeholder="Enter 3 digit area code (optional)"
                   />
                   <Form.Control.Feedback type="invalid">
                     {validationErrors.areaCode}
@@ -296,7 +311,7 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
                     value={number}
                     onChange={handlePhoneNumberChange}
                     isInvalid={!!validationErrors.number}
-                    placeholder="Enter 7 digit phone number"
+                    placeholder="Enter 7 digit phone number (optional)"
                   />
                   <Form.Control.Feedback type="invalid">
                     {validationErrors.number}
@@ -308,64 +323,31 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
             <Row>
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Sex</Form.Label>
+                  <Form.Label>Major Department</Form.Label>
                   <Form.Select
-                    value={sex}
-                    onChange={(e) => setSex(e.target.value)}
-                    required
+                    value={majorDepartmentId}
+                    onChange={(e) => setMajorDepartmentId(e.target.value)}
                   >
-                    <option value="">Select gender</option>
-                    <option value="M">M</option>
-                    <option value="F">F</option>
+                    <option value="">Select Department</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Title</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter title"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Salary</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={salary}
-                    onChange={handleSalaryChange}
-                    isInvalid={!!validationErrors.salary}
-                    placeholder="Enter salary"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.salary}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
             </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label>College Degrees</Form.Label>
-              <Form.Control
-                type="text"
-                value={collegeDegrees}
-                onChange={(e) => setCollegeDegrees(e.target.value)}
-                placeholder="Enter college degrees (e.g. B.S. Computer Science, M.S. Computer Science, Ph.D. Computer Science)"
-              />
-            </Form.Group>
-
             <div className="d-flex gap-2">
               <Button variant="primary" type="submit">
-                {isEdit ? 'Save Changes' : 'Add Professor'}
+                {isEdit ? 'Save Changes' : 'Add Student'}
+
               </Button>
-              <Button variant="secondary" onClick={() => navigate(`/admin/prof/${id}`)}>
+              <Button variant="secondary" onClick={() => navigate(`/admin/student/${id}`)}>
                 Cancel
               </Button>
             </div>
+
           </Form>
         </Card.Body>
       </Card>
@@ -373,4 +355,4 @@ const AdminProfForm: React.FC<Props> = ({ isEdit = false }) => {
   );
 };
 
-export default AdminProfForm;
+export default AdminStudentForm;

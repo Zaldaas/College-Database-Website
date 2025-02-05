@@ -6,7 +6,8 @@ The project was initially developed using MySQL for the database management and 
 ## Database Creation:
 Initially, SQL scripts (create_tables.sql and insert_data.sql) were written to create the tables and populate them with sample data. The create_tables.sql script defined the structure of each table, specifying primary keys and foreign keys to enforce relationships. The insert_data.sql script inserted sample records into each table.
 
-Now, the database schema was created using Laravel, and is dynamically updated using REST APIs.
+Now, the database is created using XAMPP and MySQL. The schema is created using Laravel, and is dynamically updated using REST APIs.
+
 
 
 ## PHP and HTML Web Interface:
@@ -15,4 +16,7 @@ In the first iteration, a series of PHP scripts as well as an HTML interface scr
 - Professors: Professors can log in using their SSN to view the sections they are teaching. They can also view the grades of students in each section.
 - Administrators: Administrators can log in to access features similar to both students and professors, including looking up professors, students, courses, and grades.
 
-Now, the interface is built using Vite/React with Typescript and Bootstrap to provide a more modern and user-friendly experience for the same users.
+The interface is now built using Vite/React with Typescript and Bootstrap to provide a more modern and user-friendly experience for the same users.
+
+## How to Use:
+Password for admin login is "password". Note that this would normally be stored in a more secure manner in a production environment.

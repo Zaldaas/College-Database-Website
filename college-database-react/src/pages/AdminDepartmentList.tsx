@@ -1,32 +1,37 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { Professor } from '../types.d';
+import { Department } from '../types.d';
 import Table from 'react-bootstrap/Table';
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
-const AdminProfList = () => {
-    const [professors, setProfessors] = useState<Professor[]>([]);
+const AdminDepartmentList = () => {
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [error, setError] = useState<string>('');
 
 
+
     useEffect(() => {
-        api.get<Professor[]>('/professors')
+        api.get<Department[]>('/departments')
             .then(response => {
-                setProfessors(response.data);
+                setDepartments(response.data);
             })
+
             .catch(error => {
-                console.error('Error fetching professors:', error);
-                setError('Failed to load professors. Please try again later.');
+                console.error('Error fetching departments:', error);
+                setError('Failed to load departments. Please try again later.');
             });
+
     }, []);
 
-    useDocumentTitle('Professor List');
+    useDocumentTitle('Department List');
+
 
     return (
         <>
@@ -39,12 +44,13 @@ const AdminProfList = () => {
             </Navbar>
             <Container>
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Professor List</h2>
-                    <Link to="/admin/newprof">
+                    <h2>Department List</h2>
+                    <Link to="/admin/newdepartment">
                         <Button variant="primary">
-                            <i className="bi bi-plus-circle me-2"></i>Add New Professor
+                            <i className="bi bi-plus-circle me-2"></i>Add New Department
                         </Button>
                     </Link>
+
                 </div>
 
                 {error && (
@@ -53,26 +59,25 @@ const AdminProfList = () => {
                     </Alert>
                 )}
 
-                {professors.length === 0 && !error ? (
+                {departments.length === 0 && !error ? (
                     <Alert variant="info">
-                        No professors found in the database.
+                        No departments found in the database.
+
                     </Alert>
                 ) : (
                     <Table striped bordered hover responsive>
                         <thead className="table-dark">
                             <tr>
                                 <th>Name</th>
-                                <th>SSN</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {professors.map((prof) => (
-                                <tr key={prof.id}>
-                                    <td>{prof.name}</td>
-                                    <td>{prof.social_security_number}</td>
+                            {departments.map((department) => (
+                                <tr key={department.id}>
+                                    <td>{department.name}</td>
                                     <td>
-                                        <Link to={`/admin/prof/${prof.id}`}>
+                                        <Link to={`/admin/department/${department.id}`}>
                                             <Button variant="outline-primary" size="sm">
                                                 View/Edit
                                             </Button>
@@ -88,4 +93,4 @@ const AdminProfList = () => {
     );
 };
 
-export default AdminProfList;
+export default AdminDepartmentList;
