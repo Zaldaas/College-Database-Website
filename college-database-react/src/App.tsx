@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Welcome from './pages/Welcome';
-import AdminList from './pages/AdminList';
-import ProfessorDetail from './pages/ProfessorDetail';
-import ProfessorForm from './pages/ProfessorForm';
+import AdminProfList from './pages/AdminProfList';
+import AdminProfDetail from './pages/AdminProfDetail';
+import AdminProfForm from './pages/AdminProfForm';
 import About from './pages/About';
 import Links from './pages/Links';
 import Admin from './pages/Admin';
+import AdminMenu from './pages/AdminMenu';
 
 function App() {
   useEffect(() => {
@@ -33,9 +34,12 @@ function App() {
 
         {/*Administrator "pages" */}
         <Route path="/admin" element={<Admin/>} />
-        <Route path="/admin/list" element={<AdminList/>} />
-        <Route path="/admin/:id" element={<ProfessorDetail />} />
-        <Route path="/admin/new" element={<ProfessorForm />} />
+        <Route path="/admin/menu" element={<AdminMenu/>} />
+        <Route path="/admin/studentlist" element={<h2>Student Page (TODO)</h2>} />
+        <Route path="/admin/proflist" element={<AdminProfList/>} />
+        <Route path="/admin/courselist" element={<h2>Course Page (TODO)</h2>} />
+        <Route path="/admin/:id" element={<AdminProfDetail />} />
+        <Route path="/admin/newprof" element={<AdminProfForm/>} />
       </Routes>
     </BrowserRouter>
   );

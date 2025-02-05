@@ -14,7 +14,7 @@ function Admin() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === 'password') {
-            navigate('/admin/list');
+            navigate('/admin/menu');
         } else {
             setError('Incorrect password');
         }

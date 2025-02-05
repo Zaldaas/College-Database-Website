@@ -12,11 +12,11 @@ function Welcome() {
           <Nav.Link href="/links">Links</Nav.Link>
         </Nav>
       </Navbar>
-      <div className="container text-center mt-3">
+      <div className="container text-center mt-5">
         <h1 className="mb-4">Welcome to the CSUF College Database!</h1>
 
         <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
-          <img src="/src/assets/CSUF.jpg" alt="CSUF" className="img-fluid mb-4" width="750"/>
+          <img src="/src/assets/CSUF.jpg" alt="CSUF" className="img-fluid mb-4" width="33%"/>
           <h3>Please login:</h3>
           <div className="mt-3">
             <Button href="/student" className="btn btn-primary me-2">
