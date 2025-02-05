@@ -8,12 +8,14 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
 const AdminProfList = () => {
     const [professors, setProfessors] = useState<Professor[]>([]);
     const [error, setError] = useState<string>('');
-
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         api.get<Professor[]>('/professors')
@@ -27,6 +29,11 @@ const AdminProfList = () => {
     }, []);
 
     useDocumentTitle('Professor List');
+
+    // Filter professors based on search term
+    const filteredProfessors = professors.filter(prof =>
+        prof.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <>
@@ -47,15 +54,29 @@ const AdminProfList = () => {
                     </Link>
                 </div>
 
+                <Form className="mb-4" onSubmit={(e) => e.preventDefault()}>
+                    <InputGroup>
+                        <InputGroup.Text>
+                            <i className="bi bi-search"></i>
+                        </InputGroup.Text>
+                        <Form.Control
+                            type="text"
+                            placeholder="Search by professor name..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </InputGroup>
+                </Form>
+
                 {error && (
                     <Alert variant="danger" className="mb-4">
                         {error}
                     </Alert>
                 )}
 
-                {professors.length === 0 && !error ? (
+                {filteredProfessors.length === 0 && !error ? (
                     <Alert variant="info">
-                        No professors found in the database.
+                        {searchTerm ? 'No professors match your search.' : 'No professors found in the database.'}
                     </Alert>
                 ) : (
                     <Table striped bordered hover responsive>
@@ -67,7 +88,7 @@ const AdminProfList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {professors.map((prof) => (
+                            {filteredProfessors.map((prof) => (
                                 <tr key={prof.id}>
                                     <td>{prof.name}</td>
                                     <td>{prof.social_security_number}</td>

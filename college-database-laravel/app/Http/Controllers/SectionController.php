@@ -22,8 +22,8 @@ class SectionController extends Controller
             'classroom' => 'nullable|string|max:50',
             'number_of_seats' => 'nullable|integer',
             'meeting_days' => 'nullable|string|max:20',
-            'beginning_time' => 'nullable|time',
-            'ending_time' => 'nullable|time',
+            'beginning_time' => 'nullable|date_format:H:i:s',
+            'ending_time' => 'nullable|date_format:H:i:s',
         ]);
 
         $section = Section::create($validated);
@@ -49,8 +49,8 @@ class SectionController extends Controller
             'classroom' => 'nullable|string|max:50',
             'number_of_seats' => 'nullable|integer',
             'meeting_days' => 'nullable|string|max:20',
-            'beginning_time' => 'nullable|time',
-            'ending_time' => 'nullable|time',
+            'beginning_time' => 'nullable|date_format:H:i:s',
+            'ending_time' => 'nullable|date_format:H:i:s',
         ]);
 
         $section->update($validated);

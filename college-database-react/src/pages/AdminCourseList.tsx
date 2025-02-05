@@ -8,6 +8,8 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
 
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
@@ -15,6 +17,7 @@ const AdminCourseList = () => {
     const [courses, setCourses] = useState<Course[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [error, setError] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         Promise.all([
@@ -22,7 +25,9 @@ const AdminCourseList = () => {
             api.get<Department[]>('/departments')
         ])
             .then(([coursesResponse, departmentsResponse]) => {
-                setCourses(coursesResponse.data);
+                // Sort courses by course number when setting them
+                const sortedCourses = coursesResponse.data.sort((a, b) => a.course_number - b.course_number);
+                setCourses(sortedCourses);
                 setDepartments(departmentsResponse.data);
             })
             .catch(error => {
@@ -32,6 +37,12 @@ const AdminCourseList = () => {
     }, []);
 
     useDocumentTitle('Course List');
+
+    // Filter courses based on search term
+    const filteredCourses = courses.filter(course => 
+        course.course_number.toString().includes(searchTerm.toLowerCase()) ||
+        course.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <>
@@ -52,15 +63,29 @@ const AdminCourseList = () => {
                     </Link>
                 </div>
 
+                <Form className="mb-4" onSubmit={(e) => e.preventDefault()}>
+                    <InputGroup>
+                        <InputGroup.Text>
+                            <i className="bi bi-search"></i>
+                        </InputGroup.Text>
+                        <Form.Control
+                            type="text"
+                            placeholder="Search by course number or title..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </InputGroup>
+                </Form>
+
                 {error && (
                     <Alert variant="danger" className="mb-4">
                         {error}
                     </Alert>
                 )}
 
-                {courses.length === 0 && !error ? (
+                {filteredCourses.length === 0 && !error ? (
                     <Alert variant="info">
-                        No courses found in the database.
+                        {searchTerm ? 'No courses match your search.' : 'No courses found in the database.'}
                     </Alert>
                 ) : (
                     <Table striped bordered hover responsive>
@@ -75,7 +100,7 @@ const AdminCourseList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {courses.map((course) => (
+                            {filteredCourses.map((course) => (
                                 <tr key={course.id}>
                                     <td>{course.course_number}</td>
                                     <td>{course.title}</td>

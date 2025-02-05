@@ -1,41 +1,43 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Row, Col, Button, Alert, Spinner } from 'react-bootstrap';
+import { Container, Card, Row, Col, Button, Alert, Spinner, Table, Modal, Form } from 'react-bootstrap';
 import api from '../services/api';
-import { Course, Department } from '../types.d';
+import { Course, Department, Section, Professor } from '../types.d';
 import useDocumentTitle from '../hooks/useDocumentTitle';
-
 
 const AdminCourseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [professors, setProfessors] = useState<Professor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-
-
+  const [showModal, setShowModal] = useState(false);
+  const [editingSection, setEditingSection] = useState<Partial<Section> | null>(null);
 
   useDocumentTitle(course ? `Course - ${course.title}` : 'Course Details');
-
 
   useEffect(() => {
     Promise.all([
       api.get(`/courses/${id}`),
-      api.get('/departments')
+      api.get('/departments'),
+      api.get(`/courses/${id}/sections`),
+      api.get('/professors')
     ])
-      .then(([courseResponse, departmentsResponse]) => {
+      .then(([courseResponse, departmentsResponse, sectionsResponse, professorsResponse]) => {
         setCourse(courseResponse.data);
         setDepartments(departmentsResponse.data);
+        setSections(sectionsResponse.data);
+        setProfessors(professorsResponse.data);
         setLoading(false);
       })
-
       .catch(error => {
-        console.error('Error fetching course:', error);
+        console.error('Error fetching data:', error);
         setError('Failed to load course details.');
         setLoading(false);
       });
-
   }, [id]);
 
   const handleDelete = async () => {
@@ -43,13 +45,72 @@ const AdminCourseDetail = () => {
     try {
       await api.delete(`/courses/${id}`);
       navigate('/admin/courselist');
-
     } catch (error) {
       console.error('Error deleting course:', error);
       setError('Failed to delete course.');
     }
   };
 
+  const handleAddSection = async () => {
+    if (!editingSection) return;
+    
+    try {
+      const sectionData = {
+        ...editingSection,
+        beginning_time: editingSection.beginning_time ? `${editingSection.beginning_time}:00` : null,
+        ending_time: editingSection.ending_time ? `${editingSection.ending_time}:00` : null,
+        // Ensure other nullable fields are properly handled
+        classroom: editingSection.classroom || null,
+        number_of_seats: editingSection.number_of_seats || null,
+        meeting_days: editingSection.meeting_days || null,
+        professor_id: editingSection.professor_id || null
+      };
+
+      if (editingSection.id) {
+        // Update existing section
+        const response = await api.put(`/sections/${editingSection.id}`, sectionData);
+        setSections(sections.map(s => s.id === editingSection.id ? response.data : s));
+      } else {
+        // Create new section
+        const response = await api.post('/sections', sectionData);
+        setSections([...sections, response.data]);
+      }
+
+      setShowModal(false);
+      setEditingSection(null);
+    } catch (error) {
+      console.error('Error saving section:', error);
+      setError('Failed to save section.');
+    }
+  };
+
+  const handleDeleteSection = async (sectionId: number) => {
+    if (!window.confirm('Are you sure you want to delete this section?')) return;
+    try {
+      await api.delete(`/sections/${sectionId}`);
+      setSections(sections.filter(section => section.id !== sectionId));
+    } catch (error) {
+      console.error('Error deleting section:', error);
+      setError('Failed to delete section.');
+    }
+  };
+
+  const openAddModal = () => {
+    setEditingSection({
+      section_number: 1,
+      course_id: Number(id)
+    });
+    setShowModal(true);
+  };
+
+  const openEditModal = (section: Section) => {
+    setEditingSection({
+      ...section,
+      beginning_time: section.beginning_time?.slice(0, 5),
+      ending_time: section.ending_time?.slice(0, 5)
+    });
+    setShowModal(true);
+  };
 
   if (loading) {
     return (
@@ -77,7 +138,6 @@ const AdminCourseDetail = () => {
     );
   }
 
-
   return (
     <Container className="py-5">
       <Card className="shadow-sm">
@@ -85,13 +145,11 @@ const AdminCourseDetail = () => {
           <h2 className="mb-0">Course Details</h2>
           <div>
             <Button
-
               variant="light"
               className="me-2"
               onClick={() => navigate(`/admin/course/${id}/edit`)}
             >
               Edit
-
             </Button>
             <Button variant="danger" onClick={handleDelete}>
               Delete
@@ -106,6 +164,66 @@ const AdminCourseDetail = () => {
               <p><strong>Title:</strong> {course.title}</p>
             </Col>
             <Col md={6}>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h4 className="text-primary mb-0">Sections</h4>
+                <Button variant="success" size="sm" onClick={openAddModal}>
+                  Add Section
+                </Button>
+              </div>
+              {sections.length === 0 ? (
+                <Alert variant="info">No sections available for this course.</Alert>
+              ) : (
+                <Table striped bordered hover size="sm">
+                  <thead>
+                    <tr>
+                      <th>Section #</th>
+                      <th>Professor</th>
+                      <th>Room</th>
+                      <th>Schedule</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sections.map((section) => (
+                      <tr key={section.id}>
+                        <td>{section.section_number}</td>
+                        <td>
+                          {section.professor_id
+                            ? professors.find(p => p.id === section.professor_id)?.name || 'Unknown'
+                            : 'TBA'}
+                        </td>
+                        <td>{section.classroom || 'TBA'}</td>
+                        <td>
+                          {section.meeting_days && section.beginning_time && section.ending_time
+                            ? `${section.meeting_days} ${section.beginning_time.slice(0, 5)}-${section.ending_time.slice(0, 5)}`
+                            : 'TBA'}
+                        </td>
+                        <td>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="me-2"
+                            onClick={() => openEditModal(section)}
+                          >
+                            View/Edit
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDeleteSection(section.id)}
+                          >
+                            Delete
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </Col>
+          </Row>
+          <Row className="mb-4">
+            <Col md={6}>
               <h4 className="text-primary mb-3">Course Information</h4>
               <p><strong>Textbook:</strong> {course.textbook}</p>
               <p><strong>Units:</strong> {course.units}</p>
@@ -114,10 +232,7 @@ const AdminCourseDetail = () => {
                   ? departments.find(dept => dept.id === course.department_id)?.name || 'Unknown Department'
                   : 'Undeclared'
               }</p>
-              <p><strong>System ID:</strong> {course.id}</p>
-
-
-            </Col>
+            </Col> 
           </Row>
 
           <div className="mt-4">
@@ -125,9 +240,126 @@ const AdminCourseDetail = () => {
               Back to List
             </Button>
           </div>
-
         </Card.Body>
       </Card>
+
+      {/* Add/Edit Section Modal */}
+      <Modal show={showModal} onHide={() => {
+        setShowModal(false);
+        setEditingSection(null);
+      }}>
+        <Modal.Header closeButton>
+          <Modal.Title>{editingSection?.id ? 'Edit Section' : 'Add New Section'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Section Number</Form.Label>
+              <Form.Control
+                type="number"
+                value={editingSection?.section_number}
+                onChange={(e) => setEditingSection(prev => ({
+                  ...prev!,
+                  section_number: parseInt(e.target.value)
+                }))}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Professor</Form.Label>
+              <Form.Select
+                value={editingSection?.professor_id || ''}
+                onChange={(e) => setEditingSection(prev => ({
+                  ...prev!,
+                  professor_id: e.target.value ? parseInt(e.target.value) : undefined
+                }))}
+              >
+                <option value="">Select Professor (Optional)</option>
+                {professors.map(prof => (
+                  <option key={prof.id} value={prof.id}>
+                    {prof.name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Classroom</Form.Label>
+              <Form.Control
+                type="text"
+                value={editingSection?.classroom || ''}
+                onChange={(e) => setEditingSection(prev => ({
+                  ...prev!,
+                  classroom: e.target.value
+                }))}
+                placeholder="Enter classroom (Optional)"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Number of Seats</Form.Label>
+              <Form.Control
+                type="number"
+                value={editingSection?.number_of_seats || ''}
+                onChange={(e) => setEditingSection(prev => ({
+                  ...prev!,
+                  number_of_seats: parseInt(e.target.value)
+                }))}
+                placeholder="Enter number of seats (Optional)"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Meeting Days</Form.Label>
+              <Form.Control
+                type="text"
+                value={editingSection?.meeting_days || ''}
+                onChange={(e) => setEditingSection(prev => ({
+                  ...prev!,
+                  meeting_days: e.target.value
+                }))}
+                placeholder="e.g. MWF (Optional)"
+              />
+            </Form.Group>
+            <Row>
+              <Col>
+                <Form.Group className="mb-3">
+                  <Form.Label>Start Time</Form.Label>
+                  <Form.Control
+                    type="time"
+                    value={editingSection?.beginning_time || ''}
+                    onChange={(e) => setEditingSection(prev => ({
+                      ...prev!,
+                      beginning_time: e.target.value
+                    }))}
+                  />
+                </Form.Group>
+              </Col>
+              <Col>
+                <Form.Group className="mb-3">
+                  <Form.Label>End Time</Form.Label>
+                  <Form.Control
+                    type="time"
+                    value={editingSection?.ending_time || ''}
+                    onChange={(e) => setEditingSection(prev => ({
+                      ...prev!,
+                      ending_time: e.target.value
+                    }))}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowModal(false);
+            setEditingSection(null);
+          }}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleAddSection}>
+            {editingSection?.id ? 'Save Changes' : 'Add Section'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

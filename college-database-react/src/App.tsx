@@ -16,7 +16,7 @@ import AdminProfForm from './pages/AdminProfForm';
 import AdminProfDetail from './pages/AdminProfDetail';
 import AdminDepartmentList from './pages/AdminDepartmentList';
 import AdminDepartmentForm from './pages/AdminDepartmentForm';
-
+import AdminDepartmentDetail from './pages/AdminDepartmentDetail';
 function App() {
   useEffect(() => {
     document.body.setAttribute('data-bs-theme', 'dark');
@@ -60,7 +60,7 @@ function App() {
         <Route path="/admin/newprof" element={<AdminProfForm/>} />
         {/*Administrator Department Pages */}
         <Route path="/admin/departmentlist" element={<AdminDepartmentList/>} />
-        {/* <Route path="/admin/department/:id" element={<AdminDepartmentDetail/>} /> */}
+        <Route path="/admin/department/:id" element={<AdminDepartmentDetail/>} />
         <Route path="/admin/department/:id/edit" element={<AdminDepartmentForm isEdit={true} />} />
         <Route path="/admin/newdepartment" element={<AdminDepartmentForm/>} />
       </Routes>

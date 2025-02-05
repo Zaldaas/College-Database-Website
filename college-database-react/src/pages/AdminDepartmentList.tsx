@@ -8,30 +8,33 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
 
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
 const AdminDepartmentList = () => {
     const [departments, setDepartments] = useState<Department[]>([]);
     const [error, setError] = useState<string>('');
-
-
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         api.get<Department[]>('/departments')
             .then(response => {
                 setDepartments(response.data);
             })
-
             .catch(error => {
                 console.error('Error fetching departments:', error);
                 setError('Failed to load departments. Please try again later.');
             });
-
     }, []);
 
     useDocumentTitle('Department List');
 
+    // Filter departments based on search term
+    const filteredDepartments = departments.filter(department =>
+        department.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <>
@@ -50,8 +53,21 @@ const AdminDepartmentList = () => {
                             <i className="bi bi-plus-circle me-2"></i>Add New Department
                         </Button>
                     </Link>
-
                 </div>
+
+                <Form className="mb-4" onSubmit={(e) => e.preventDefault()}>
+                    <InputGroup>
+                        <InputGroup.Text>
+                            <i className="bi bi-search"></i>
+                        </InputGroup.Text>
+                        <Form.Control
+                            type="text"
+                            placeholder="Search by department name..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </InputGroup>
+                </Form>
 
                 {error && (
                     <Alert variant="danger" className="mb-4">
@@ -59,10 +75,9 @@ const AdminDepartmentList = () => {
                     </Alert>
                 )}
 
-                {departments.length === 0 && !error ? (
+                {filteredDepartments.length === 0 && !error ? (
                     <Alert variant="info">
-                        No departments found in the database.
-
+                        {searchTerm ? 'No departments match your search.' : 'No departments found in the database.'}
                     </Alert>
                 ) : (
                     <Table striped bordered hover responsive>
@@ -73,7 +88,7 @@ const AdminDepartmentList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {departments.map((department) => (
+                            {filteredDepartments.map((department) => (
                                 <tr key={department.id}>
                                     <td>{department.name}</td>
                                     <td>

@@ -89,7 +89,6 @@ const AdminProfDetail = () => {
               <p><strong>Name:</strong> {professor.name}</p>
               <p><strong>SSN:</strong> {professor.social_security_number}</p>
               <p><strong>Sex:</strong> {professor.sex}</p>
-              <p><strong>System ID:</strong> {professor.id}</p>
             </Col>
             <Col md={6}>
 

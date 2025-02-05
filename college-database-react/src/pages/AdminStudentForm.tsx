@@ -343,7 +343,7 @@ const AdminStudentForm: React.FC<Props> = ({ isEdit = false }) => {
                 {isEdit ? 'Save Changes' : 'Add Student'}
 
               </Button>
-              <Button variant="secondary" onClick={() => navigate(`/admin/student/${id}`)}>
+              <Button variant="secondary" onClick={() => navigate(isEdit ? `/admin/student/${id}` : '/admin/studentlist')}>
                 Cancel
               </Button>
             </div>

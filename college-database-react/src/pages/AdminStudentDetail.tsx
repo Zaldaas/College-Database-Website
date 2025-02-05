@@ -100,7 +100,6 @@ const AdminStudentDetail = () => {
                   ? departments.find(dept => dept.id === student.major_department_id)?.name || 'Unknown Department'
                   : 'Undeclared'
               }</p>
-              <p><strong>System ID:</strong> {student.id}</p>
             </Col>
             <Col md={6}>
               <h4 className="text-primary mb-3">Contact Information</h4>

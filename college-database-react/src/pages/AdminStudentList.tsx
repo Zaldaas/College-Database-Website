@@ -8,29 +8,33 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
 
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
 const AdminStudentList = () => {
     const [students, setStudents] = useState<Student[]>([]);
     const [error, setError] = useState<string>('');
-
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         api.get<Student[]>('/students')
             .then(response => {
                 setStudents(response.data);
             })
-
             .catch(error => {
                 console.error('Error fetching students:', error);
                 setError('Failed to load students. Please try again later.');
             });
-
     }, []);
 
     useDocumentTitle('Student List');
 
+    // Filter students based on search term
+    const filteredStudents = students.filter(student =>
+        `${student.first_name} ${student.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <>
@@ -51,6 +55,19 @@ const AdminStudentList = () => {
                     </Link>
                 </div>
 
+                <Form className="mb-4" onSubmit={(e) => e.preventDefault()}>
+                    <InputGroup>
+                        <InputGroup.Text>
+                            <i className="bi bi-search"></i>
+                        </InputGroup.Text>
+                        <Form.Control
+                            type="text"
+                            placeholder="Search by student name..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </InputGroup>
+                </Form>
 
                 {error && (
                     <Alert variant="danger" className="mb-4">
@@ -58,11 +75,10 @@ const AdminStudentList = () => {
                     </Alert>
                 )}
 
-                {students.length === 0 && !error ? (
+                {filteredStudents.length === 0 && !error ? (
                     <Alert variant="info">
-                        No students found in the database.
+                        {searchTerm ? 'No students match your search.' : 'No students found in the database.'}
                     </Alert>
-
                 ) : (
                     <Table striped bordered hover responsive>
                         <thead className="table-dark">
@@ -73,17 +89,14 @@ const AdminStudentList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {students.map((student) => (
+                            {filteredStudents.map((student) => (
                                 <tr key={student.id}>
                                     <td>{student.first_name} {student.last_name}</td>
                                     <td>{student.campus_wide_id}</td>
                                     <td>
-
-
                                         <Link to={`/admin/student/${student.id}`}>
                                             <Button variant="outline-primary" size="sm">
                                                 View/Edit
-
                                             </Button>
                                         </Link>
                                     </td>

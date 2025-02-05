@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import api from '../services/api';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import { Professor } from '../types.d';
 
 interface Props {
   isEdit?: boolean;
@@ -21,8 +22,17 @@ const AdminDepartmentForm: React.FC<Props> = ({ isEdit = false }) => {
   const [chairpersonId, setChairpersonId] = useState('');
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [professors, setProfessors] = useState<Professor[]>([]);
 
   useEffect(() => {
+    // Fetch professors for the dropdown
+    api.get('/professors')
+      .then(response => {
+        setProfessors(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching professors:', error);
+      });
     if (isEdit && id) {
       api.get(`/departments/${id}`)
         .then(response => {
@@ -166,13 +176,17 @@ const AdminDepartmentForm: React.FC<Props> = ({ isEdit = false }) => {
               <Col md={4}>
                 <Form.Group className="mb-3">
                   <Form.Label>Chairperson</Form.Label>
-                  <Form.Control
-                    type="text"
+                  <Form.Select
                     value={chairpersonId}
                     onChange={(e) => setChairpersonId(e.target.value)}
-                    placeholder="Enter chairperson id"
-
-                  />
+                  >
+                    <option value="">Select Professor</option>
+                    {professors.map(prof => (
+                      <option key={prof.id} value={prof.id}>
+                        {prof.name}
+                      </option>
+                    ))}
+                  </Form.Select>
                 </Form.Group>
               </Col>
             </Row>
@@ -180,7 +194,7 @@ const AdminDepartmentForm: React.FC<Props> = ({ isEdit = false }) => {
               <Button variant="primary" type="submit">
                 {isEdit ? 'Save Changes' : 'Add Department'}
               </Button>
-              <Button variant="secondary" onClick={() => navigate(`/admin/department/${id}`)}>
+              <Button variant="secondary" onClick={() => navigate(isEdit ? `/admin/department/${id}` : '/admin/departmentlist')}>
                 Cancel
 
               </Button>

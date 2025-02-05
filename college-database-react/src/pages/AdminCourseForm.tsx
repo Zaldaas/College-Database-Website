@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import api from '../services/api';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import { Department } from '../types.d';
 
 interface Props {
   isEdit?: boolean;
@@ -22,9 +23,19 @@ const AdminCourseForm: React.FC<Props> = ({ isEdit = false }) => {
   const [departmentId, setDepartmentId] = useState('');
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [departments, setDepartments] = useState<Department[]>([]);
 
 
   useEffect(() => {
+    // Fetch departments for the dropdown
+    api.get('/departments')
+      .then(response => {
+        setDepartments(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching departments:', error);
+      });
+
     if (isEdit && id) {
       api.get(`/courses/${id}`)
         .then(response => {
@@ -54,11 +65,6 @@ const AdminCourseForm: React.FC<Props> = ({ isEdit = false }) => {
       errors.courseNumber = 'Course can only contain numbers';
     }
 
-    // Department ID validation - must be a number
-    if (!/^\d+$/.test(departmentId)) {
-      errors.departmentId = 'Department ID can only contain numbers';
-    }
-
     // Units validation - must be a number
     if (!/^\d+$/.test(units) && units !== '') {
       errors.units = 'Units can only contain numbers';
@@ -83,7 +89,7 @@ const AdminCourseForm: React.FC<Props> = ({ isEdit = false }) => {
       title,
       textbook,
       units: Number(units),
-      department_id: Number(departmentId),
+      department_id: departmentId || null
     };
 
     try {
@@ -112,12 +118,6 @@ const AdminCourseForm: React.FC<Props> = ({ isEdit = false }) => {
   const handleUnitsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 3);
     setUnits(value);
-  };
-
-
-  const handleDepartmentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 7);
-    setDepartmentId(value);
   };
 
   if (loading) {
@@ -206,17 +206,18 @@ const AdminCourseForm: React.FC<Props> = ({ isEdit = false }) => {
               <Col md={4}>
                 <Form.Group className="mb-3">
                   <Form.Label>Department ID</Form.Label>
-                  <Form.Control
-                    type="text"
+                  <Form.Select
                     value={departmentId}
-                    onChange={handleDepartmentIdChange}
-                    isInvalid={!!validationErrors.departmentId}
-                    placeholder="Enter department ID"
+                    onChange={(e) => setDepartmentId(e.target.value)}
+                  >
+                    <option value="">Select Department</option>
 
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.departmentId}
-                  </Form.Control.Feedback>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </Form.Select>
                 </Form.Group>
 
               </Col>
@@ -226,7 +227,7 @@ const AdminCourseForm: React.FC<Props> = ({ isEdit = false }) => {
               <Button variant="primary" type="submit">
                 {isEdit ? 'Save Changes' : 'Add Course'}
               </Button>
-              <Button variant="secondary" onClick={() => navigate(`/admin/course/${id}`)}>
+              <Button variant="secondary" onClick={() => navigate(isEdit ? `/admin/course/${id}` : '/admin/courselist')}>
                 Cancel
 
               </Button>
