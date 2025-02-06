@@ -36,17 +36,19 @@ The interface is now built using Vite/React with Typescript and Bootstrap to pro
    ```
    
 4. Copy the `.env.example` file to `.env`:
+   
    - On Windows:
+
      ```bash
      copy .env.example .env
      ```
      
-5. Generate an application key by running:
+6. Generate an application key by running:
    ```bash
    php artisan key:generate
    ```
    
-6. Ensure your database connection in the `.env` file by updating `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` as per your MySQL configuration.
+7. Ensure your database connection in the `.env` file by updating `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` as per your MySQL configuration.
    
 8. Run database migrations to set up the schema with:
    ```bash
