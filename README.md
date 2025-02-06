@@ -9,7 +9,6 @@ Initially, SQL scripts (create_tables.sql and insert_data.sql) were written to c
 Now, the database is created using XAMPP and MySQL. The schema is created using Laravel, and is dynamically updated using REST APIs.
 
 
-
 ## Web Interface
 In the first iteration, a series of PHP scripts as well as an HTML interface script were developed to provide functionalities for different users:
 - Students: Students can log in using their campus-wide ID to view their enrolled courses and grades. They can also look up details about specific courses.
@@ -18,5 +17,52 @@ In the first iteration, a series of PHP scripts as well as an HTML interface scr
 
 The interface is now built using Vite/React with Typescript and Bootstrap to provide a more modern and user-friendly experience for the same users.
 
-## How to Use
-Password for admin login is "password". Note that this would normally be stored in a more secure manner in a production environment.
+## Setup Instructions
+
+### Prerequisites
+- XAMPP with MySQL and PHP: Ensure XAMPP is installed and the MySQL services are running.
+- Composer: Required for managing PHP dependencies.
+- Node.js and npm: Needed to run the Vite/React development server.
+
+
+### Backend Setup (Laravel)
+1. Open your terminal and navigate to the college-database-laravel.
+2. Run the following command to install PHP dependencies:
+   ```bash
+   composer install
+   ```
+3. Copy the `.env.example` file to `.env`:
+   - On Windows:
+     ```bash
+     copy .env.example .env
+     ```
+4. Generate an application key by running:
+   ```bash
+   php artisan key:generate
+   ```
+5. Ensure your database connection in the `.env` file by updating `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` as per your MySQL configuration.
+6. Run database migrations to set up the schema with:
+   ```bash
+   php artisan migrate
+   ```
+7. Start the Laravel development server with:
+   ```bash
+   php artisan serve
+   ```
+   (default URL: http://127.0.0.1:8000)
+
+### Frontend Setup (Vite/React)
+1. Navigate to the project root college-database-react.
+2. Run the following command to install JavaScript dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server with:
+   ```bash
+   npm run dev
+   ```
+   (default URL: http://localhost:3000 or http://localhost:5173)
+
+### Accessing the Application
+- Open your web browser and go to the Vite/React server URL.
+- Use the admin password "password" for administrator access.
