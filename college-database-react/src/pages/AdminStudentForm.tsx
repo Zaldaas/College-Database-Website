@@ -206,7 +206,7 @@ const AdminStudentForm: React.FC<Props> = ({ isEdit = false }) => {
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>SSN</Form.Label>
+                    <Form.Label>CWID</Form.Label>
                     <Form.Control
                       type="text"
                       value={campusWideId}
