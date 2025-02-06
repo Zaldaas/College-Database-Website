@@ -7,10 +7,12 @@ import Fade from 'react-bootstrap/Fade';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import api from '../services/api';
+import { Professor as ProfessorType } from '../types.d';
 
-function Admin() {
-    useDocumentTitle('Admin Login');
-    const [password, setPassword] = useState('');
+function Professor() {
+    useDocumentTitle('Professor Login');
+    const [ssn, setSsn] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const [show, setShow] = useState(false);
@@ -23,13 +25,32 @@ function Admin() {
         return () => clearTimeout(timeout);
     }, []);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (password === 'password') {
-            navigate('/admin/menu');
-        } else {
-            setError('Incorrect password');
+        setError('');
+
+        try {
+            const response = await api.get<ProfessorType[]>('/professors');
+            const professors = response.data;
+            const professor = professors.find(p => p.social_security_number === ssn);
+
+            if (professor) {
+                navigate(`/professor/${professor.id}/menu`, {
+                    state: { professorId: professor.id }
+                });
+            } else {
+                setError('Invalid social security number');
+            }
+
+        } catch (error) {
+            console.error('Error verifying professor:', error);
+            setError('An error occurred while verifying your credentials');
         }
+    };
+
+    const handleSSNChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, '').slice(0, 9);
+        setSsn(value);
     };
 
     return (
@@ -46,17 +67,19 @@ function Admin() {
                     <div className="w-100" style={{ maxWidth: "400px" }}>
                         <Form onSubmit={handleSubmit}>
                             <Form.Group className="mb-3">
-                                <Form.Label htmlFor="inputPassword5">Password</Form.Label>
+                                <Form.Label htmlFor="inputSSN">Social Security Number</Form.Label>
                                 <Form.Control
                                     type="password"
-                                    id="inputPassword5"
-                                    aria-describedby="passwordHelpBlock"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    id="inputSSN"
+                                    aria-describedby="ssnHelpBlock"
+                                    value={ssn}
+                                    onChange={handleSSNChange}
                                     isInvalid={!!error}
+                                    required
+                                    placeholder="Enter your 9-digit SSN"
                                 />
-                                <Form.Text id="passwordHelpBlock" muted>
-                                    Please enter the administrator password.
+                                <Form.Text id="ssnHelpBlock" muted>
+                                    Please enter your social security number.
                                 </Form.Text>
                                 {error && (
                                     <Form.Control.Feedback type="invalid">
@@ -75,4 +98,4 @@ function Admin() {
     );
 }
 
-export default Admin;
+export default Professor;

@@ -10,7 +10,7 @@ Now, the database is created using XAMPP and MySQL. The schema is created using 
 
 
 
-## PHP and HTML Web Interface
+## Web Interface
 In the first iteration, a series of PHP scripts as well as an HTML interface script were developed to provide functionalities for different users:
 - Students: Students can log in using their campus-wide ID to view their enrolled courses and grades. They can also look up details about specific courses.
 - Professors: Professors can log in using their SSN to view the sections they are teaching. They can also view the grades of students in each section.

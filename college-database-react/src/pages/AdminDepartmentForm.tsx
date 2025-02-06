@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { Container, Form, Button, Card, Row, Col, Alert, Spinner, Fade } from 'react-bootstrap';
 import api from '../services/api';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import { Professor } from '../types.d';
@@ -16,6 +16,7 @@ const AdminDepartmentForm: React.FC<Props> = ({ isEdit = false }) => {
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(isEdit);
+  const [show, setShow] = useState(false);
   const [name, setName] = useState('');
   const [telephone, setTelephone] = useState('');
   const [officeLocation, setOfficeLocation] = useState('');
@@ -25,32 +26,43 @@ const AdminDepartmentForm: React.FC<Props> = ({ isEdit = false }) => {
   const [professors, setProfessors] = useState<Professor[]>([]);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!loading) {
+        setShow(true);
+      }
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  useEffect(() => {
+    setLoading(true);
+    setShow(false);
     // Fetch professors for the dropdown
     api.get('/professors')
       .then(response => {
         setProfessors(response.data);
+        if (isEdit && id) {
+          return api.get(`/departments/${id}`);
+        } else {
+          setLoading(false);
+        }
       })
-      .catch(error => {
-        console.error('Error fetching professors:', error);
-      });
-    if (isEdit && id) {
-      api.get(`/departments/${id}`)
-        .then(response => {
+      .then(response => {
+        if (response) {
           const department = response.data;
           setName(department.name);
           setTelephone(department.telephone);
           setOfficeLocation(department.office_location);
           setChairpersonId(department.chairperson_id);
-
           setLoading(false);
-        })
-        .catch(error => {
-          console.error('Error fetching department:', error);
-          setError('Failed to load department details.');
-          setLoading(false);
-        });
-
-    }
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+        setError('Failed to load data.');
+        setLoading(false);
+      });
   }, [isEdit, id]);
 
   const validateForm = () => {
@@ -105,104 +117,111 @@ const AdminDepartmentForm: React.FC<Props> = ({ isEdit = false }) => {
 
   if (loading) {
     return (
-      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-      </Container>
+      <Fade in={show}>
+        <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+          <div className="text-center">
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+            <p className="mt-2">Loading department details...</p>
+          </div>
+        </Container>
+      </Fade>
     );
   }
 
   return (
-    <Container className="py-5">
-      <Card className="shadow-sm">
-        <Card.Header className="bg-primary text-white">
-          <h2 className="mb-0">{isEdit ? 'Edit Department' : 'Add New Department'}</h2>
-        </Card.Header>
-        <Card.Body>
-          {error && <Alert variant="danger">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Name</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    placeholder="Enter department name"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.name}
-                  </Form.Control.Feedback>
-                </Form.Group>
+    <Fade in={show}>
+      <Container className="py-5">
+        <Card className="shadow-sm">
+          <Card.Header className="bg-primary text-white">
+            <h2 className="mb-0">{isEdit ? 'Edit Department' : 'Add New Department'}</h2>
+          </Card.Header>
+          <Card.Body>
+            {error && <Alert variant="danger">{error}</Alert>}
+            <Form onSubmit={handleSubmit}>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Name</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      placeholder="Enter department name"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {validationErrors.name}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Telephone</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={telephone}
-                    onChange={handleTelephoneChange}
-                    required
-                    placeholder="Enter 10 digit telephone number"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.telephone}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Telephone</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={telephone}
+                      onChange={handleTelephoneChange}
+                      required
+                      placeholder="Enter 10 digit telephone number"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {validationErrors.telephone}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-              </Col>
-            </Row>
+                </Col>
+              </Row>
 
-            <Row>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Office Location</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={officeLocation}
-                    onChange={(e) => setOfficeLocation(e.target.value)}
-                    placeholder="Enter office location"
+              <Row>
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Office Location</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={officeLocation}
+                      onChange={(e) => setOfficeLocation(e.target.value)}
+                      placeholder="Enter office location"
 
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Chairperson</Form.Label>
-                  <Form.Select
-                    value={chairpersonId}
-                    onChange={(e) => setChairpersonId(e.target.value)}
-                  >
-                    <option value="">Select Professor</option>
-                    {professors.map(prof => (
-                      <option key={prof.id} value={prof.id}>
-                        {prof.name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
-            <div className="d-flex gap-2">
-              <Button variant="primary" type="submit">
-                {isEdit ? 'Save Changes' : 'Add Department'}
-              </Button>
-              <Button variant="secondary" onClick={() => navigate(isEdit ? `/admin/department/${id}` : '/admin/departmentlist')}>
-                Cancel
+              <Row>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Chairperson</Form.Label>
+                    <Form.Select
+                      value={chairpersonId}
+                      onChange={(e) => setChairpersonId(e.target.value)}
+                    >
+                      <option value="">Select Professor</option>
+                      {professors.map(prof => (
+                        <option key={prof.id} value={prof.id}>
+                          {prof.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+              </Row>
+              <div className="d-flex gap-2">
+                <Button variant="primary" type="submit">
+                  {isEdit ? 'Save Changes' : 'Add Department'}
+                </Button>
+                <Button variant="secondary" onClick={() => navigate(isEdit ? `/admin/department/${id}` : '/admin/departmentlist')}>
+                  Cancel
 
-              </Button>
-            </div>
-          </Form>
-        </Card.Body>
-      </Card>
-    </Container>
+                </Button>
+              </div>
+            </Form>
+          </Card.Body>
+        </Card>
+      </Container>
+    </Fade>
   );
 };
 

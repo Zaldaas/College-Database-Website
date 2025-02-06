@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useLocation } from 'react-router-dom';
 import api from '../services/api';
-import { Course, Department } from '../types.d';
+import { Course, Section } from '../types.d';
 import Table from 'react-bootstrap/Table';
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
@@ -11,16 +11,20 @@ import Nav from 'react-bootstrap/Nav';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Fade from 'react-bootstrap/Fade';
-import Spinner from 'react-bootstrap/Spinner';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import Spinner from 'react-bootstrap/Spinner';
 
-const AdminCourseList = () => {
+const ProfessorMyCourses = () => {
     const [courses, setCourses] = useState<Course[]>([]);
-    const [departments, setDepartments] = useState<Department[]>([]);
+    const [sections, setSections] = useState<Section[]>([]);
     const [error, setError] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const [show, setShow] = useState(false);
     const [loading, setLoading] = useState(true);
+    
+    const { id } = useParams();
+    const location = useLocation();
+    const professorId = id || (location.state as { professorId: string })?.professorId;
 
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -37,13 +41,24 @@ const AdminCourseList = () => {
         setShow(false);
         Promise.all([
             api.get<Course[]>('/courses'),
-            api.get<Department[]>('/departments')
+            api.get<Section[]>('/sections')
         ])
-            .then(([coursesResponse, departmentsResponse]) => {
-                // Sort courses by course number when setting them
-                const sortedCourses = coursesResponse.data.sort((a, b) => a.course_number - b.course_number);
-                setCourses(sortedCourses);
-                setDepartments(departmentsResponse.data);
+            .then(([coursesResponse, sectionsResponse]) => {
+                // Get all sections taught by this professor
+                const professorSections = sectionsResponse.data.filter(
+                    section => section.professor_id === Number(professorId)
+                );
+                setSections(professorSections);
+
+                // Get unique course IDs from professor's sections
+                const professorCourseIds = new Set(professorSections.map(section => section.course_id));
+
+                // Filter and sort courses that the professor teaches
+                const professorCourses = coursesResponse.data
+                    .filter(course => professorCourseIds.has(course.id))
+                    .sort((a, b) => a.course_number - b.course_number);
+
+                setCourses(professorCourses);
                 setLoading(false);
             })
             .catch(error => {
@@ -51,9 +66,9 @@ const AdminCourseList = () => {
                 setError('Failed to load courses. Please try again later.');
                 setLoading(false);
             });
-    }, []);
+    }, [professorId]);
 
-    useDocumentTitle('Course List');
+    useDocumentTitle('My Courses');
 
     // Filter courses based on search term
     const filteredCourses = courses.filter(course => 
@@ -63,14 +78,16 @@ const AdminCourseList = () => {
 
     if (loading) {
         return (
-            <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
-                <div className="text-center">
-                    <Spinner animation="border" role="status" variant="primary">
-                        <span className="visually-hidden">Loading...</span>
-                    </Spinner>
-                    <p className="mt-2">Loading courses...</p>
-                </div>
-            </Container>
+            <Fade in={true}>
+                <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+                    <div className="text-center">
+                        <Spinner animation="border" role="status" variant="primary">
+                            <span className="visually-hidden">Loading...</span>
+                        </Spinner>
+                        <p className="mt-2">Loading your courses...</p>
+                    </div>
+                </Container>
+            </Fade>
         );
     }
 
@@ -78,7 +95,7 @@ const AdminCourseList = () => {
         <>
             <Navbar className="bg-body-tertiary mb-4">
               <Nav className="ms-auto me-3">
-                <Navbar.Brand href="/admin/menu">Dashboard</Navbar.Brand>
+                <Navbar.Brand href={`/professor/${professorId}/menu`}>Dashboard</Navbar.Brand>
                 <Nav.Link href="/about">About</Nav.Link>
                 <Nav.Link href="/links">Links</Nav.Link>
               </Nav>
@@ -86,12 +103,7 @@ const AdminCourseList = () => {
             <Fade in={show}>
                 <Container>
                     <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h2>Course List</h2>
-                        <Link to="/admin/newcourse">
-                            <Button variant="primary">
-                                <i className="bi bi-plus-circle me-2"></i>Add New Course
-                            </Button>
-                        </Link>
+                        <h2>My Courses</h2>
                     </div>
 
                     <Form className="mb-4" onSubmit={(e) => e.preventDefault()}>
@@ -116,37 +128,38 @@ const AdminCourseList = () => {
 
                     {filteredCourses.length === 0 && !error ? (
                         <Alert variant="info">
-                            {searchTerm ? 'No courses match your search.' : 'No courses found in the database.'}
+                            {searchTerm ? 'No courses match your search.' : 'You are not currently teaching any courses.'}
                         </Alert>
                     ) : (
                         <Table striped bordered hover responsive>
                             <thead className="table-dark">
                                 <tr>
                                     <th>Course Number</th>
+                                    <th>Section</th>
                                     <th>Title</th>
-                                    <th>Textbook</th>
                                     <th>Units</th>
-                                    <th>Department</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredCourses.map((course) => (
-                                    <tr key={course.id}>
-                                        <td>{course.course_number}</td>
-                                        <td>{course.title}</td>
-                                        <td>{course.textbook}</td>
-                                        <td>{course.units}</td>
-                                        <td>{departments.find(dept => dept.id === course.department_id)?.name || 'Unknown Department'}</td>
-                                        <td>
-                                            <Link to={`/admin/course/${course.id}`}>
-                                                <Button variant="outline-primary" size="sm">
-                                                    View/Edit
-                                                </Button>
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {filteredCourses.map((course) => {
+                                    const courseSections = sections.filter(section => section.course_id === course.id);
+                                    return courseSections.map((section) => (
+                                        <tr key={`${course.id}-${section.id}`}>
+                                            <td>{course.course_number}</td>
+                                            <td>{section.section_number}</td>
+                                            <td>{course.title}</td>
+                                            <td>{course.units}</td>
+                                            <td>
+                                                <Link to={`/professor/${professorId}/section/${section.id}`}>
+                                                    <Button variant="outline-primary" size="sm">
+                                                        View Students
+                                                    </Button>
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ));
+                                })}
                             </tbody>
                         </Table>
                     )}
@@ -156,4 +169,4 @@ const AdminCourseList = () => {
     );
 };
 
-export default AdminCourseList;
+export default ProfessorMyCourses;

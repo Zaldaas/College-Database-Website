@@ -3,6 +3,15 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Welcome from './pages/Welcome';
 import About from './pages/About';
 import Links from './pages/Links';
+import Student from './pages/Student';
+import StudentMenu from './pages/StudentMenu';
+import StudentMyCourses from './pages/StudentMyCourses';
+import StudentEnroll from './pages/StudentEnroll';
+import Professor from './pages/Professor';
+import ProfessorMenu from './pages/ProfessorMenu';
+import ProfessorMyCourses from './pages/ProfessorMyCourses';
+import ProfessorSection from './pages/ProfessorSection';
+import ProfessorEnroll from './pages/ProfessorEnroll';
 import Admin from './pages/Admin';
 import AdminMenu from './pages/AdminMenu';
 import AdminStudentList from './pages/AdminStudentList';
@@ -17,6 +26,7 @@ import AdminProfDetail from './pages/AdminProfDetail';
 import AdminDepartmentList from './pages/AdminDepartmentList';
 import AdminDepartmentForm from './pages/AdminDepartmentForm';
 import AdminDepartmentDetail from './pages/AdminDepartmentDetail';
+
 function App() {
   useEffect(() => {
     document.body.setAttribute('data-bs-theme', 'dark');
@@ -35,11 +45,17 @@ function App() {
         <Route path="/links" element={<Links />} />
 
         {/*Student Pages */}
-        <Route path="/student" element={<h2>Student Page (TODO)</h2>} />
-
+        <Route path="/student" element={<Student/>} />
+        <Route path="/student/:id/menu" element={<StudentMenu/>} />
+        <Route path="/student/:id/mycourses" element={<StudentMyCourses/>} />
+        <Route path="/student/:id/enroll" element={<StudentEnroll/>} />
+        
         {/*Professor Pages */}
-        <Route path="/professor" element={<h2>Professor Page (TODO)</h2>} />
-
+        <Route path="/professor" element={<Professor/>} />
+        <Route path="/professor/:id/menu/" element={<ProfessorMenu/>} />
+        <Route path="/professor/:id/mycourses" element={<ProfessorMyCourses/>} />
+        <Route path="/professor/:id/section/:sectionId" element={<ProfessorSection/>} />
+        <Route path="/professor/:id/enroll" element={<ProfessorEnroll/>} />
         {/*Administrator Pages */}
         <Route path="/admin" element={<Admin/>} />
         <Route path="/admin/menu" element={<AdminMenu/>} />

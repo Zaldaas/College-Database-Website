@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { Container, Form, Button, Card, Row, Col, Alert, Spinner, Fade } from 'react-bootstrap';
 import api from '../services/api';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import { Department } from '../types.d';
@@ -16,6 +16,7 @@ const AdminStudentForm: React.FC<Props> = ({ isEdit = false }) => {
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState(isEdit);
+  const [show, setShow] = useState(false);
   const [campusWideId, setCampusWideId] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -31,18 +32,30 @@ const AdminStudentForm: React.FC<Props> = ({ isEdit = false }) => {
   const [departments, setDepartments] = useState<Department[]>([]);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!loading) {
+        setShow(true);
+      }
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  useEffect(() => {
+    setLoading(true);
+    setShow(false);
     // Fetch departments for the dropdown
     api.get('/departments')
       .then(response => {
         setDepartments(response.data);
+        if (isEdit && id) {
+          return api.get(`/students/${id}`);
+        } else {
+          setLoading(false);
+        }
       })
-      .catch(error => {
-        console.error('Error fetching departments:', error);
-      });
-
-    if (isEdit && id) {
-      api.get(`/students/${id}`)
-        .then(response => {
+      .then(response => {
+        if (response) {
           const student = response.data;
           setCampusWideId(student.campus_wide_id);
           setFirstName(student.first_name);
@@ -55,13 +68,13 @@ const AdminStudentForm: React.FC<Props> = ({ isEdit = false }) => {
           setNumber(student.number || '');
           setMajorDepartmentId(student.major_department_id);
           setLoading(false);
-        })
-        .catch(error => {
-          console.error('Error fetching student:', error);
-          setError('Failed to load student details.');
-          setLoading(false);
-        });
-    }
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+        setError('Failed to load data.');
+        setLoading(false);
+      });
   }, [isEdit, id]);
 
   const validateForm = () => {
@@ -167,191 +180,198 @@ const AdminStudentForm: React.FC<Props> = ({ isEdit = false }) => {
 
   if (loading) {
     return (
-      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-      </Container>
+      <Fade in={show}>
+        <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+          <div className="text-center">
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+            <p className="mt-2">Loading student details...</p>
+          </div>
+        </Container>
+      </Fade>
     );
   }
 
   return (
-    <Container className="py-5">
-      <Card className="shadow-sm">
-        <Card.Header className="bg-primary text-white">
-          <h2 className="mb-0">{isEdit ? 'Edit Student' : 'Add New Student'}</h2>
-        </Card.Header>
-        <Card.Body>
-          {error && <Alert variant="danger">{error}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>SSN</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={campusWideId}
-                    onChange={handleCampusWideIdChange}
-                    isInvalid={!!validationErrors.campusWideId}
-                    required
-                    placeholder="Enter 9 digit Campus Wide ID (e.g. 123456789)"
+    <Fade in={show}>
+      <Container className="py-5">
+        <Card className="shadow-sm">
+          <Card.Header className="bg-primary text-white">
+            <h2 className="mb-0">{isEdit ? 'Edit Student' : 'Add New Student'}</h2>
+          </Card.Header>
+          <Card.Body>
+            {error && <Alert variant="danger">{error}</Alert>}
+            <Form onSubmit={handleSubmit}>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>SSN</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={campusWideId}
+                      onChange={handleCampusWideIdChange}
+                      isInvalid={!!validationErrors.campusWideId}
+                      required
+                      placeholder="Enter 9 digit Campus Wide ID (e.g. 123456789)"
 
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.campusWideId}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {validationErrors.campusWideId}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-              </Col>
-              <Col md={3}>
+                </Col>
+                <Col md={3}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>First Name</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      placeholder="Enter first name"
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
                 <Form.Group className="mb-3">
-                  <Form.Label>First Name</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                    placeholder="Enter first name"
-                  />
-                </Form.Group>
+                    <Form.Label>Last Name</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      placeholder="Enter last name"
+                    />
+                  </Form.Group>
               </Col>
-              <Col md={3}>
-              <Form.Group className="mb-3">
-                  <Form.Label>Last Name</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                    placeholder="Enter last name"
-                  />
-                </Form.Group>
-            </Col>
-            </Row>
+              </Row>
 
-            <Row>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Street Address</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={streetAddress}
-                    onChange={(e) => setStreetAddress(e.target.value)}
-                    placeholder="Enter street address"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+              <Row>
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Street Address</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={streetAddress}
+                      onChange={(e) => setStreetAddress(e.target.value)}
+                      placeholder="Enter street address"
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>City</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="Enter city"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>State</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={state}
-                    onChange={handleStateChange}
-                    isInvalid={!!validationErrors.state}
-                    placeholder="Enter state (e.g. CA)"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.state}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Zip Code</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={zipCode}
-                    onChange={handleZipCodeChange}
-                    isInvalid={!!validationErrors.zipCode}
-                    placeholder="Enter zip code"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.zipCode}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-            </Row>
+              <Row>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>City</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Enter city"
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>State</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={state}
+                      onChange={handleStateChange}
+                      isInvalid={!!validationErrors.state}
+                      placeholder="Enter state (e.g. CA)"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {validationErrors.state}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Zip Code</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={zipCode}
+                      onChange={handleZipCodeChange}
+                      isInvalid={!!validationErrors.zipCode}
+                      placeholder="Enter zip code"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {validationErrors.zipCode}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Area Code</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={areaCode}
-                    onChange={handleAreaCodeChange}
-                    isInvalid={!!validationErrors.areaCode}
-                    placeholder="Enter 3 digit area code (optional)"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.areaCode}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Phone Number</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={number}
-                    onChange={handlePhoneNumberChange}
-                    isInvalid={!!validationErrors.number}
-                    placeholder="Enter 7 digit phone number (optional)"
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {validationErrors.number}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-            </Row>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Area Code</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={areaCode}
+                      onChange={handleAreaCodeChange}
+                      isInvalid={!!validationErrors.areaCode}
+                      placeholder="Enter 3 digit area code (optional)"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {validationErrors.areaCode}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Phone Number</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={number}
+                      onChange={handlePhoneNumberChange}
+                      isInvalid={!!validationErrors.number}
+                      placeholder="Enter 7 digit phone number (optional)"
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {validationErrors.number}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+              </Row>
 
-            <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Major Department</Form.Label>
-                  <Form.Select
-                    value={majorDepartmentId}
-                    onChange={(e) => setMajorDepartmentId(e.target.value)}
-                  >
-                    <option value="">Select Department</option>
-                    {departments.map(dept => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
-            <div className="d-flex gap-2">
-              <Button variant="primary" type="submit">
-                {isEdit ? 'Save Changes' : 'Add Student'}
+              <Row>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Major Department</Form.Label>
+                    <Form.Select
+                      value={majorDepartmentId}
+                      onChange={(e) => setMajorDepartmentId(e.target.value)}
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+              </Row>
+              <div className="d-flex gap-2">
+                <Button variant="primary" type="submit">
+                  {isEdit ? 'Save Changes' : 'Add Student'}
 
-              </Button>
-              <Button variant="secondary" onClick={() => navigate(isEdit ? `/admin/student/${id}` : '/admin/studentlist')}>
-                Cancel
-              </Button>
-            </div>
+                </Button>
+                <Button variant="secondary" onClick={() => navigate(isEdit ? `/admin/student/${id}` : '/admin/studentlist')}>
+                  Cancel
+                </Button>
+              </div>
 
-          </Form>
-        </Card.Body>
-      </Card>
-    </Container>
+            </Form>
+          </Card.Body>
+        </Card>
+      </Container>
+    </Fade>
   );
 };
 

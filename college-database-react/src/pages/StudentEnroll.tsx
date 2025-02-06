@@ -1,0 +1,247 @@
+import { useEffect, useState } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
+import api from '../services/api';
+import { Course, Section, Enrollment } from '../types.d';
+import Table from 'react-bootstrap/Table';
+import Container from 'react-bootstrap/Container';
+import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
+import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
+import Fade from 'react-bootstrap/Fade';
+import Modal from 'react-bootstrap/Modal';
+import useDocumentTitle from '../hooks/useDocumentTitle';
+import Spinner from 'react-bootstrap/Spinner';
+
+const StudentEnroll = () => {
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [sections, setSections] = useState<Section[]>([]);
+    const [error, setError] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [show, setShow] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [selectedSection, setSelectedSection] = useState<Section | null>(null);
+    const [loading, setLoading] = useState(true);
+    
+
+    const { id } = useParams();
+    const location = useLocation();
+    const studentId = id || (location.state as { studentId: string })?.studentId;
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (!loading) {
+                setShow(true);
+            }
+        }, 100);
+
+        return () => clearTimeout(timeout);
+    }, [loading]);
+
+    useEffect(() => {
+        setLoading(true);
+        setShow(false);
+        Promise.all([
+            api.get<Course[]>('/courses'),
+            api.get<Section[]>('/sections'),
+            api.get<Enrollment[]>('/enrollments')
+        ])
+            .then(([coursesResponse, sectionsResponse, enrollmentsResponse]) => {
+                // Get student's current enrollments
+                const studentEnrollments = enrollmentsResponse.data.filter(
+                    enrollment => enrollment.student_id === Number(studentId)
+                );
+
+                // Get sections that aren't full
+                const availableSections = sectionsResponse.data.filter(section => 
+                    (!section.number_of_seats || // No seat limit
+                    enrollmentsResponse.data.filter(e => e.section_id === section.id).length < (section.number_of_seats || 0)) // Has available seats
+                );
+                
+                // Filter out sections the student is already enrolled in
+                const unenrolledSections = availableSections.filter(section =>
+                    !studentEnrollments.some(enrollment => enrollment.section_id === section.id)
+                );
+                
+                setSections(unenrolledSections);
+
+                // Get unique course IDs from available sections
+                const availableCourseIds = new Set(unenrolledSections.map(section => section.course_id));
+
+                // Filter and sort courses that have available sections
+                const availableCourses = coursesResponse.data
+                    .filter(course => availableCourseIds.has(course.id))
+                    .sort((a, b) => a.course_number - b.course_number);
+
+                setCourses(availableCourses);
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                setError('Failed to load courses. Please try again later.');
+                setLoading(false);
+            });
+    }, [studentId]);
+
+    const handleEnrollClick = (section: Section) => {
+        setSelectedSection(section);
+        setShowModal(true);
+    };
+
+    const handleConfirmEnroll = async () => {
+        if (!selectedSection) return;
+
+        try {
+            // Create a new enrollment record
+            await api.post('/enrollments', {
+                student_id: studentId,
+                section_id: selectedSection.id
+            });
+
+            // Remove the enrolled section and its course if no more sections
+            setSections(prev => prev.filter(s => s.id !== selectedSection.id));
+            const remainingSectionsForCourse = sections.filter(
+                s => s.course_id === selectedSection.course_id && s.id !== selectedSection.id
+            );
+            if (remainingSectionsForCourse.length === 0) {
+                setCourses(prev => prev.filter(c => c.id !== selectedSection.course_id));
+            }
+
+            setShowModal(false);
+        } catch (error) {
+            console.error('Error enrolling in section:', error);
+            setError('Failed to enroll in section. Please try again later.');
+        }
+    };
+
+    useDocumentTitle('Available Courses');
+
+    // Filter courses based on search term
+    const filteredCourses = courses.filter(course => 
+        course.course_number.toString().includes(searchTerm.toLowerCase()) ||
+        course.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (loading) {
+        return (
+            <Fade in={true}>
+                <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+                    <div className="text-center">
+                        <Spinner animation="border" role="status" variant="primary">
+                            <span className="visually-hidden">Loading...</span>
+                        </Spinner>
+                        <p className="mt-2">Loading available courses...</p>
+                    </div>
+                </Container>
+            </Fade>
+        );
+    }
+
+    return (
+        <>
+            <Navbar className="bg-body-tertiary mb-4">
+              <Nav className="ms-auto me-3">
+                <Navbar.Brand href={`/student/${studentId}/menu`}>Dashboard</Navbar.Brand>
+                <Nav.Link href="/about">About</Nav.Link>
+                <Nav.Link href="/links">Links</Nav.Link>
+              </Nav>
+            </Navbar>
+            <Fade in={show}>
+                <Container>
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Available Courses</h2>
+                    </div>
+
+                    <Form className="mb-4" onSubmit={(e) => e.preventDefault()}>
+                        <InputGroup>
+                            <InputGroup.Text>
+                                <i className="bi bi-search"></i>
+                            </InputGroup.Text>
+                            <Form.Control
+                                type="text"
+                                placeholder="Search by course number or title..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </InputGroup>
+                    </Form>
+
+                    {error && (
+                        <Alert variant="danger" className="mb-4">
+                            {error}
+                        </Alert>
+                    )}
+
+                    {filteredCourses.length === 0 && !error ? (
+                        <Alert variant="info">
+                            {searchTerm ? 'No courses match your search.' : 'There are no available courses to enroll in at this time.'}
+                        </Alert>
+                    ) : (
+                        <Table striped bordered hover responsive>
+                            <thead className="table-dark">
+                                <tr>
+                                    <th>Course Number</th>
+                                    <th>Section</th>
+                                    <th>Title</th>
+                                    <th>Units</th>
+                                    <th>Meeting Days</th>
+                                    <th>Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredCourses.map((course) => {
+                                    const courseSections = sections.filter(section => section.course_id === course.id);
+                                    return courseSections.map((section) => (
+                                        <tr key={`${course.id}-${section.id}`}>
+                                            <td>{course.course_number}</td>
+                                            <td>{section.section_number}</td>
+                                            <td>{course.title}</td>
+                                            <td>{course.units}</td>
+                                            <td>{section.meeting_days || 'TBA'}</td>
+                                            <td>
+                                                {section.beginning_time && section.ending_time
+                                                    ? `${section.beginning_time} - ${section.ending_time}`
+                                                    : 'TBA'}
+                                            </td>
+                                            <td>
+                                                <Button 
+                                                    variant="outline-primary" 
+                                                    size="sm"
+                                                    onClick={() => handleEnrollClick(section)}
+                                                >
+                                                    Enroll
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ));
+                                })}
+                            </tbody>
+                        </Table>
+                    )}
+
+                    <Modal show={showModal} onHide={() => setShowModal(false)}>
+                        <Modal.Header closeButton>
+                            <Modal.Title>Confirm Enrollment</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            Are you sure you would like to enroll in this section? This action cannot be undone without administrator intervention.
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={() => setShowModal(false)}>
+                                No
+                            </Button>
+                            <Button variant="primary" onClick={handleConfirmEnroll}>
+                                Yes
+                            </Button>
+                        </Modal.Footer>
+                    </Modal>
+                </Container>
+            </Fade>
+        </>
+    );
+};
+
+export default StudentEnroll;

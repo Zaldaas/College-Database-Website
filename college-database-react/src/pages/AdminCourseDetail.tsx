@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Row, Col, Button, Alert, Spinner, Table, Modal, Form } from 'react-bootstrap';
+import { Container, Card, Row, Col, Button, Alert, Spinner, Table, Modal, Form, Fade } from 'react-bootstrap';
 import api from '../services/api';
 import { Course, Department, Section, Professor } from '../types.d';
 import useDocumentTitle from '../hooks/useDocumentTitle';
@@ -16,10 +16,26 @@ const AdminCourseDetail = () => {
   const [error, setError] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
   const [editingSection, setEditingSection] = useState<Partial<Section> | null>(null);
+  const [show, setShow] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteSectionModal, setShowDeleteSectionModal] = useState(false);
+  const [sectionToDelete, setSectionToDelete] = useState<number | null>(null);
 
-  useDocumentTitle(course ? `Course - ${course.title}` : 'Course Details');
+  useDocumentTitle(course ? `Course - ${course.title}` : 'Course List');
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!loading) {
+        setShow(true);
+      }
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  useEffect(() => {
+    setLoading(true);
+    setShow(false);
     Promise.all([
       api.get(`/courses/${id}`),
       api.get('/departments'),
@@ -41,7 +57,6 @@ const AdminCourseDetail = () => {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this course?')) return;
     try {
       await api.delete(`/courses/${id}`);
       navigate('/admin/courselist');
@@ -85,7 +100,6 @@ const AdminCourseDetail = () => {
   };
 
   const handleDeleteSection = async (sectionId: number) => {
-    if (!window.confirm('Are you sure you want to delete this section?')) return;
     try {
       await api.delete(`/sections/${sectionId}`);
       setSections(sections.filter(section => section.id !== sectionId));
@@ -115,9 +129,12 @@ const AdminCourseDetail = () => {
   if (loading) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
+        <div className="text-center">
+          <Spinner animation="border" role="status" variant="primary">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+          <p className="mt-2">Loading course details...</p>
+        </div>
       </Container>
     );
   }
@@ -139,109 +156,118 @@ const AdminCourseDetail = () => {
   }
 
   return (
-    <Container className="py-5">
-      <Card className="shadow-sm">
-        <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
-          <h2 className="mb-0">Course Details</h2>
-          <div>
-            <Button
-              variant="light"
-              className="me-2"
-              onClick={() => navigate(`/admin/course/${id}/edit`)}
-            >
-              Edit
-            </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Delete
-            </Button>
-          </div>
-        </Card.Header>
-        <Card.Body>
-          <Row className="mb-4">
-            <Col md={6}>
-              <h4 className="text-primary mb-3">Course Name</h4>
-              <p><strong>Course Number:</strong> {course.course_number}</p>
-              <p><strong>Title:</strong> {course.title}</p>
-            </Col>
-            <Col md={6}>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h4 className="text-primary mb-0">Sections</h4>
-                <Button variant="success" size="sm" onClick={openAddModal}>
-                  Add Section
+    <>
+      <Fade in={show}>
+        <Container className="py-5">
+          <Card className="shadow-sm">
+            <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
+              <h2 className="mb-0">Course Details</h2>
+              <div>
+                <Button
+                  variant="light"
+                  className="me-2"
+                  onClick={() => navigate(`/admin/course/${id}/edit`)}
+                >
+                  Edit
+                </Button>
+                <Button variant="danger" onClick={() => {
+                  setShowDeleteModal(true);
+                }}>
+                  Delete
                 </Button>
               </div>
-              {sections.length === 0 ? (
-                <Alert variant="info">No sections available for this course.</Alert>
-              ) : (
-                <Table striped bordered hover size="sm">
-                  <thead>
-                    <tr>
-                      <th>Section #</th>
-                      <th>Professor</th>
-                      <th>Room</th>
-                      <th>Schedule</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sections.map((section) => (
-                      <tr key={section.id}>
-                        <td>{section.section_number}</td>
-                        <td>
-                          {section.professor_id
-                            ? professors.find(p => p.id === section.professor_id)?.name || 'Unknown'
-                            : 'TBA'}
-                        </td>
-                        <td>{section.classroom || 'TBA'}</td>
-                        <td>
-                          {section.meeting_days && section.beginning_time && section.ending_time
-                            ? `${section.meeting_days} ${section.beginning_time.slice(0, 5)}-${section.ending_time.slice(0, 5)}`
-                            : 'TBA'}
-                        </td>
-                        <td>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => openEditModal(section)}
-                          >
-                            View/Edit
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleDeleteSection(section.id)}
-                          >
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              )}
-            </Col>
-          </Row>
-          <Row className="mb-4">
-            <Col md={6}>
-              <h4 className="text-primary mb-3">Course Information</h4>
-              <p><strong>Textbook:</strong> {course.textbook}</p>
-              <p><strong>Units:</strong> {course.units}</p>
-              <p><strong>Department:</strong> {
-                course.department_id 
-                  ? departments.find(dept => dept.id === course.department_id)?.name || 'Unknown Department'
-                  : 'Undeclared'
-              }</p>
-            </Col> 
-          </Row>
+            </Card.Header>
+            <Card.Body>
+              <Row className="mb-4">
+                <Col md={6}>
+                  <h4 className="text-primary mb-3">Course Name</h4>
+                  <p><strong>Course Number:</strong> {course.course_number}</p>
+                  <p><strong>Title:</strong> {course.title}</p>
+                </Col>
+                <Col md={6}>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h4 className="text-primary mb-0">Sections</h4>
+                    <Button variant="success" size="sm" onClick={openAddModal}>
+                      Add Section
+                    </Button>
+                  </div>
+                  {sections.length === 0 ? (
+                    <Alert variant="info">No sections available for this course.</Alert>
+                  ) : (
+                    <Table striped bordered hover size="sm">
+                      <thead>
+                        <tr>
+                          <th>Section #</th>
+                          <th>Professor</th>
+                          <th>Room</th>
+                          <th>Schedule</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sections.map((section) => (
+                          <tr key={section.id}>
+                            <td>{section.section_number}</td>
+                            <td>
+                              {section.professor_id
+                                ? professors.find(p => p.id === section.professor_id)?.name || 'Unknown'
+                                : 'TBA'}
+                            </td>
+                            <td>{section.classroom || 'TBA'}</td>
+                            <td>
+                              {section.meeting_days && section.beginning_time && section.ending_time
+                                ? `${section.meeting_days} ${section.beginning_time.slice(0, 5)}-${section.ending_time.slice(0, 5)}`
+                                : 'TBA'}
+                            </td>
+                            <td>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                className="me-2"
+                                onClick={() => openEditModal(section)}
+                              >
+                                View/Edit
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => {
+                                  setShowDeleteSectionModal(true);
+                                  setSectionToDelete(section.id);
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  )}
+                </Col>
+              </Row>
+              <Row className="mb-4">
+                <Col md={6}>
+                  <h4 className="text-primary mb-3">Course Information</h4>
+                  <p><strong>Textbook:</strong> {course.textbook}</p>
+                  <p><strong>Units:</strong> {course.units}</p>
+                  <p><strong>Department:</strong> {
+                    course.department_id 
+                      ? departments.find(dept => dept.id === course.department_id)?.name || 'Unknown Department'
+                      : 'Undeclared'
+                  }</p>
+                </Col> 
+              </Row>
 
-          <div className="mt-4">
-            <Button variant="secondary" onClick={() => navigate('/admin/courselist')}>
-              Back to List
-            </Button>
-          </div>
-        </Card.Body>
-      </Card>
+              <div className="mt-4">
+                <Button variant="secondary" onClick={() => navigate('/admin/courselist')}>
+                  Back to List
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
+        </Container>
+      </Fade>
 
       {/* Add/Edit Section Modal */}
       <Modal show={showModal} onHide={() => {
@@ -360,7 +386,58 @@ const AdminCourseDetail = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </Container>
+
+      {/* Delete Course Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this course? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => {
+            setShowDeleteModal(false);
+            handleDelete();
+          }}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Delete Section Modal */}
+      <Modal show={showDeleteSectionModal} onHide={() => {
+        setShowDeleteSectionModal(false);
+        setSectionToDelete(null);
+      }} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete Section</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete this section? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowDeleteSectionModal(false);
+            setSectionToDelete(null);
+          }}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => {
+            if (sectionToDelete !== null) {
+              handleDeleteSection(sectionToDelete);
+            }
+            setShowDeleteSectionModal(false);
+            setSectionToDelete(null);
+          }}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 };
 
