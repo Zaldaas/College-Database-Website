@@ -1,7 +1,9 @@
 # CSUF College Database
 The objective of this project is to design and implement a web database application for a university. The database manages information related to professors, departments, courses, sections, students, and enrollments.
 
-The project was initially developed using XAMPP with Apache and MySQL for the database management and PHP and HTML for the website functionality. It has now been redone to incorporate Vite/React for the frontend and Laravel for the backend.
+The project was initially developed using simple HTML/CSS for the web interface and PHP and SQL scripts for the backend database functionality. 
+
+Now, the project incorporates Vite/React for the frontend and Laravel for the backend, and utilizes XAMPP with Apache and MySQL for the database management.
 
 ## Database Creation
 Initially, SQL scripts (create_tables.sql and insert_data.sql) were written to create the tables and populate them with sample data. The create_tables.sql script defined the structure of each table, specifying primary keys and foreign keys to enforce relationships. The insert_data.sql script inserted sample records into each table.
