@@ -35,7 +35,7 @@ The interface is now built using Vite/React with Typescript and Bootstrap to pro
    composer install
    ```
    
-3. Copy the `.env.example` file to `.env`:
+3. Copy the `.env.example` file to `.env`.
      
 4. Generate an application key by running:
    ```bash
