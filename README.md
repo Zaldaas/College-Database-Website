@@ -30,32 +30,26 @@ The interface is now built using Vite/React with Typescript and Bootstrap to pro
 ### Backend Setup (Laravel)
 1. Open your terminal and navigate to the college-database-laravel.
    
-3. Run the following command to install PHP dependencies:
+2. Run the following command to install PHP dependencies:
    ```bash
    composer install
    ```
    
-4. Copy the `.env.example` file to `.env`:
-   
-   - On Windows:
-
-     ```bash
-     copy .env.example .env
-     ```
+3. Copy the `.env.example` file to `.env`:
      
-6. Generate an application key by running:
+4. Generate an application key by running:
    ```bash
    php artisan key:generate
    ```
    
-7. Ensure your database connection in the `.env` file by updating `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` as per your MySQL configuration.
+5. Ensure your database connection in the `.env` file by updating `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` as per your MySQL configuration.
    
-8. Run database migrations to set up the schema with:
+6. Run database migrations to set up the schema with:
    ```bash
    php artisan migrate
    ```
    
-9. Start the Laravel development server with:
+7. Start the Laravel development server with:
    ```bash
    php artisan serve
    ```
@@ -64,12 +58,12 @@ The interface is now built using Vite/React with Typescript and Bootstrap to pro
 ### Frontend Setup (Vite/React)
 1. Navigate to the project root college-database-react.
    
-3. Run the following command to install JavaScript dependencies:
+2. Run the following command to install JavaScript dependencies:
    ```bash
    npm install
    ```
    
-4. Start the Vite development server with:
+3. Start the Vite development server with:
    ```bash
    npm run dev
    ```
