@@ -1,4 +1,4 @@
-# CSUF College Database
+# College Database Website
 The objective of this project is to design and implement a web database application for a university. The database manages information related to professors, departments, courses, sections, students, and enrollments.
 
 The project was initially developed using simple HTML/CSS for the web interface and PHP and SQL scripts for the backend database functionality. 
